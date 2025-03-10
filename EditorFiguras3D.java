@@ -10,13 +10,14 @@ import com.jogamp.opengl.glu.GLUquadric;
 
 public class EditorFiguras3D extends JFrame implements GLEventListener {
     private JComboBox<String> selectorForma, selectorColor, selectorTransform;
-    private JPanel panelControles, panelColor;
+    private JPanel panelControles, panelColor ,  panelSesgado;
     private JSlider[] sliders;
     private GLJPanel glPanel;
     private JSlider sliderSesgoX, sliderSesgoY;
     private float rotationX = 0, rotationY = 0;
     private float translateX = 0, translateY = 0, translateZ = -5;
     private float scale = 1;
+    private float shearX = 0.0f, shearY = 0.0f;
     private int currentShape = 0;
     private float[] colorValues = new float[3];
     private GLU glu = new GLU();
@@ -30,7 +31,7 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
 
     private void configurarVentana() {
         setTitle("Editor de Figuras 3D");
-        setSize(1280, 720);
+        setSize(1080, 920);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(new Color(45, 45, 45));
@@ -60,7 +61,7 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
         String[] modelosColor = {"RGB", "HSL", "HSV"};
         selectorColor = crearComboBox(modelosColor, new Color(80, 160, 120));
         
-        String[] transformaciones = {"Rotación", "Escala", "Traslación"};
+        String[] transformaciones = {"Rotación", "Escala", "Traslación" , "Sesgado"};
         selectorTransform = crearComboBox(transformaciones, new Color(160, 100, 200));
 
         panelIzquierdo.add(crearEtiqueta("Seleccionar Figura:"));
@@ -80,6 +81,16 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
         panelColor.setBackground(new Color(70, 70, 70));
         add(panelColor, BorderLayout.EAST);
 
+        panelSesgado = new JPanel(new GridLayout(2, 1, 5, 5));
+        panelSesgado.setBorder(new TitledBorder("Controles de Sesgado"));
+        panelSesgado.setBackground(new Color(70, 70, 70));
+        sliderSesgoX = crearSlider(-100, 100, "Sesgo X");
+        sliderSesgoY = crearSlider(-100, 100, "Sesgo Y");
+        panelSesgado.add(sliderSesgoX);
+        panelSesgado.add(sliderSesgoY);
+        panelSesgado.setVisible(false);
+        add(panelSesgado, BorderLayout.SOUTH);
+
         actualizarControlesColor();
     }
 
@@ -93,10 +104,12 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
     }
 
     private JSlider crearSlider(int min, int max, String titulo) {
-        JSlider slider = new JSlider(min, max, 50);
+        JSlider slider = new JSlider(min, max, 0);
         slider.setBackground(new Color(70, 70, 70));
         slider.setForeground(Color.WHITE);
         slider.setBorder(BorderFactory.createTitledBorder(titulo));
+        slider.setPaintTicks(true);
+        slider.setPaintLabels(true);
         return slider;
     }
 
@@ -114,6 +127,29 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
         
         selectorColor.addActionListener(e -> actualizarControlesColor());
         
+        // En el método configurarEventos():
+selectorTransform.addActionListener(e -> {
+    boolean mostrarSesgado = selectorTransform.getSelectedIndex() == 3;
+    panelSesgado.setVisible(mostrarSesgado);
+    if(mostrarSesgado) {
+        // Resetear valores al seleccionar sesgado
+        shearX = 0.0f;
+        shearY = 0.0f;
+        sliderSesgoX.setValue(0);
+        sliderSesgoY.setValue(0);
+    }
+    glPanel.repaint();
+});
+
+        sliderSesgoX.addChangeListener(e -> {
+            shearX = sliderSesgoX.getValue() / 100.0f;
+            glPanel.repaint();
+        });
+
+        sliderSesgoY.addChangeListener(e -> {
+            shearY = sliderSesgoY.getValue() / 100.0f;
+            glPanel.repaint();
+        });
         MouseAdapter mouseAdapter = new MouseAdapter() {
             private Point lastPoint;
             
@@ -122,10 +158,13 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
             }
             
             public void mouseDragged(MouseEvent e) {
+                int transformIndex = selectorTransform.getSelectedIndex();
+                if(transformIndex == 3) return; // No usar mouse para sesgado
+
                 int dx = e.getX() - lastPoint.x;
                 int dy = e.getY() - lastPoint.y;
                 
-                switch(selectorTransform.getSelectedIndex()) {
+                switch(transformIndex) {
                     case 0: // Rotación
                         rotationX += dy * 0.5f;
                         rotationY += dx * 0.5f;
@@ -150,12 +189,13 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
     private void actualizarControlesColor() {
         panelColor.removeAll();
         String modelo = (String) selectorColor.getSelectedItem();
-        String[] etiquetas = modelo.equals("RGB") ? 
+        String[] etiquetas = modelo.equals("RGB") ?
             new String[]{"Rojo", "Verde", "Azul"} :
             new String[]{"Tono", "Saturación", "Luminosidad"};
         
         for(int i = 0; i < 3; i++) {
             JSlider slider = crearSlider(0, 100, etiquetas[i]);
+            slider.setValue((int)(colorValues[i] * 100));
             final int index = i;
             slider.addChangeListener(e -> {
                 colorValues[index] = slider.getValue() / 100f;
@@ -193,6 +233,24 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
         gl.glRotatef(rotationY, 0, 1, 0);
         gl.glScalef(scale, scale, scale);
         
+        // Aplicar sesgado si está seleccionado
+        if(selectorTransform.getSelectedIndex() == 3) {
+        // Calcular punto de anclaje (esquina inferior izquierda en 3D)
+        float anchorX = -1.0f; // Coordenada X mínima del cubo
+        float anchorY = -1.0f; // Coordenada Y mínima del cubo
+        float anchorZ = -1.0f; // Coordenada Z mínima del cubo
+        
+        // Matriz de transformación compuesta
+            gl.glTranslatef(anchorX, anchorY, anchorZ); // Mover al origen
+        float[] shearMatrix = {
+            1.0f, shearY, 0.0f, 0.0f,
+            shearX, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f
+        };
+            gl.glMultMatrixf(shearMatrix, 0);
+            gl.glTranslatef(-anchorX, -anchorY, -anchorZ); // Devolver a posición
+        }
         // Configurar color
         Color color = convertColor(colorValues, selectorColor.getSelectedIndex());
         gl.glColor3f(color.getRed()/255f, color.getGreen()/255f, color.getBlue()/255f);
@@ -243,12 +301,13 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
 
     private void drawCube(GL2 gl) {
         gl.glBegin(GL2.GL_QUADS);
+        float size = 1.0f;
         
         // Cara frontal
-        gl.glVertex3f(-1, -1, 1);
-        gl.glVertex3f(1, -1, 1);
-        gl.glVertex3f(1, 1, 1);
-        gl.glVertex3f(-1, 1, 1);
+        gl.glVertex3f(-size, -size, size);
+        gl.glVertex3f(size, -size, size);
+        gl.glVertex3f(size, size, size);
+        gl.glVertex3f(-size, size, size);
         
         // Cara trasera
         gl.glVertex3f(-1, -1, -1);
