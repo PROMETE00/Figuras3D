@@ -208,53 +208,73 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
     }
 
     private Color convertColor(float[] values, int colorModel) {
-        if(colorModel == 0) { // RGB
+        if (colorModel == 0) { // RGB
             return new Color(values[0], values[1], values[2]);
-        } else { // HSL/HSV
+        } else if (colorModel == 1) { // HSL
+            return hslToRgb(values[0], values[1], values[2]);
+        } else { // HSV
             return Color.getHSBColor(values[0], values[1], values[2]);
         }
+    }
+    
+    private Color hslToRgb(float h, float s, float l) {
+        float r, g, b;
+    
+        if (s == 0f) {
+            r = g = b = l; // escala de grises
+        } else {
+            float q = l < 0.5f ? l * (1 + s) : l + s - l * s;
+            float p = 2 * l - q;
+            r = hueToRgb(p, q, h + 1f/3f);
+            g = hueToRgb(p, q, h);
+            b = hueToRgb(p, q, h - 1f/3f);
+        }
+        return new Color(r, g, b);
+    }
+    
+    private float hueToRgb(float p, float q, float t) {
+        if (t < 0f) t += 1f;
+        if (t > 1f) t -= 1f;
+        if (t < 1f/6f) return p + (q - p) * 6f * t;
+        if (t < 1f/2f) return q;
+        if (t < 2f/3f) return p + (q - p) * (2f/3f - t) * 6f;
+        return p;
     }
 
     private void drawCube(GL2 gl) {
         gl.glBegin(GL2.GL_QUADS);
         
-        // Cara frontal (roja)
-        gl.glColor3f(1, 0, 0);
+        // Cara frontal
         gl.glVertex3f(-1, -1, 1);
         gl.glVertex3f(1, -1, 1);
         gl.glVertex3f(1, 1, 1);
         gl.glVertex3f(-1, 1, 1);
         
-        // Cara trasera (verde)
-        gl.glColor3f(0, 1, 0);
+        // Cara trasera
         gl.glVertex3f(-1, -1, -1);
         gl.glVertex3f(-1, 1, -1);
         gl.glVertex3f(1, 1, -1);
         gl.glVertex3f(1, -1, -1);
         
-        // Cara superior (azul)
-        gl.glColor3f(0, 0, 1);
+        // Cara superior
         gl.glVertex3f(-1, 1, -1);
         gl.glVertex3f(-1, 1, 1);
         gl.glVertex3f(1, 1, 1);
         gl.glVertex3f(1, 1, -1);
         
-        // Cara inferior (amarilla)
-        gl.glColor3f(1, 1, 0);
+        // Cara inferior
         gl.glVertex3f(-1, -1, -1);
         gl.glVertex3f(1, -1, -1);
         gl.glVertex3f(1, -1, 1);
         gl.glVertex3f(-1, -1, 1);
         
-        // Cara izquierda (cyan)
-        gl.glColor3f(0, 1, 1);
+        // Cara izquierda
         gl.glVertex3f(-1, -1, -1);
         gl.glVertex3f(-1, -1, 1);
         gl.glVertex3f(-1, 1, 1);
         gl.glVertex3f(-1, 1, -1);
         
-        // Cara derecha (magenta)
-        gl.glColor3f(1, 0, 1);
+        // Cara derecha
         gl.glVertex3f(1, -1, -1);
         gl.glVertex3f(1, 1, -1);
         gl.glVertex3f(1, 1, 1);
@@ -264,50 +284,47 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
     }
 
     private void drawSphere(GL2 gl) {
-    gl.glColor3f(1, 0.5f, 0);
+    //gl.glColor3f(1, 0.5f, 0);
     GLUquadric sphere = glu.gluNewQuadric();
     glu.gluQuadricDrawStyle(sphere, GLU.GLU_LINE); // Modo wireframe
-    glu.gluSphere(sphere, 1, 64, 64); // Más segmentos para mayor detalle
+    glu.gluSphere(sphere, 1, 50, 50); // Más segmentos 
+    glu.gluDeleteQuadric(sphere);
 }
 
-    private void drawPyramid(GL2 gl) {
-        gl.glBegin(GL2.GL_TRIANGLES);
-        
-        // Base (cuadrada)
-        gl.glColor3f(1, 0, 0);
-        gl.glVertex3f(-1, -1, -1);
-        gl.glVertex3f(1, -1, -1);
-        gl.glVertex3f(0, -1, 1);
-        
-        // Caras laterales
-        gl.glColor3f(0, 1, 0);
-        gl.glVertex3f(-1, -1, -1);
-        gl.glVertex3f(0, 1, 0);
-        gl.glVertex3f(0, -1, 1);
-        
-        gl.glColor3f(0, 0, 1);
-        gl.glVertex3f(0, -1, 1);
-        gl.glVertex3f(0, 1, 0);
-        gl.glVertex3f(1, -1, -1);
-        
-        gl.glColor3f(1, 1, 0);
-        gl.glVertex3f(1, -1, -1);
-        gl.glVertex3f(0, 1, 0);
-        gl.glVertex3f(-1, -1, -1);
-        
-        gl.glEnd();
-    }
+private void drawPyramid(GL2 gl) {
+    gl.glBegin(GL2.GL_TRIANGLES);
+    
+    // Base
+    gl.glVertex3f(-1, -1, -1);
+    gl.glVertex3f(1, -1, -1);
+    gl.glVertex3f(0, -1, 1);
+    
+    // Caras laterales
+    gl.glVertex3f(-1, -1, -1);
+    gl.glVertex3f(0, 1, 0);
+    gl.glVertex3f(0, -1, 1);
+    
+    gl.glVertex3f(0, -1, 1);
+    gl.glVertex3f(0, 1, 0);
+    gl.glVertex3f(1, -1, -1);
+    
+    gl.glVertex3f(1, -1, -1);
+    gl.glVertex3f(0, 1, 0);
+    gl.glVertex3f(-1, -1, -1);
+    
+    gl.glEnd();
+}
 
     private void drawCylinder(GL2 gl) {
         GLUquadric quadric = glu.gluNewQuadric();
         glu.gluQuadricDrawStyle(quadric, GLU.GLU_FILL);
         
         // Color principal del cilindro
-        gl.glColor3f(0.2f, 0.6f, 1.0f);  // Azul claro
+        //gl.glColor3f(0.2f, 0.6f, 1.0f);  // Azul claro
         glu.gluCylinder(quadric, 1, 1, 2, 64, 1);
         
         // Color diferente para las tapas
-        gl.glColor3f(0.9f, 0.9f, 0.9f);  // Gris claro
+        //gl.glColor3f(0.9f, 0.9f, 0.9f);  // Gris claro
         
         // Tapa inferior
         glu.gluDisk(quadric, 0, 1, 64, 1);
@@ -317,12 +334,14 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
         gl.glTranslatef(0, 0, 2);
         glu.gluDisk(quadric, 0, 1, 64, 1);
         gl.glPopMatrix();
+        glu.gluDeleteQuadric(quadric);
     }
 
     private void drawCone(GL2 gl) {
         GLUquadric cone = glu.gluNewQuadric();
         glu.gluQuadricDrawStyle(cone, GLU.GLU_FILL);
         glu.gluCylinder(cone, 1, 0, 2, 64, 1);
+        glu.gluDeleteQuadric(cone);
     }
 
     @Override
