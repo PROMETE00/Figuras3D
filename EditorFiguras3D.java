@@ -19,7 +19,7 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
     private float scale = 1;
     private float shearX = 0.0f, shearY = 0.0f;
     private int currentShape = 0;
-    private float[] colorValues = new float[3];
+    private float[] colorValues = new float[4];
     private GLU glu = new GLU();
     private FPSAnimator animator;
 
@@ -58,7 +58,7 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
         String[] formas = {"Cubo", "Esfera", "Piramide", "Cilindro", "Cono"};
         selectorForma = crearComboBox(formas, new Color(70, 130, 180));
         
-        String[] modelosColor = {"RGB", "HSL", "HSV"};
+        String[] modelosColor = {"RGB", "CMYK" , "HSL" , "HSV"};
         selectorColor = crearComboBox(modelosColor, new Color(80, 160, 120));
         
         String[] transformaciones = {"Rotación", "Escala", "Traslación" , "Sesgado"};
@@ -189,11 +189,13 @@ selectorTransform.addActionListener(e -> {
     private void actualizarControlesColor() {
         panelColor.removeAll();
         String modelo = (String) selectorColor.getSelectedItem();
-        String[] etiquetas = modelo.equals("RGB") ?
-            new String[]{"Rojo", "Verde", "Azul"} :
-            new String[]{"Tono", "Saturación", "Luminosidad"};
+        String[] etiquetas = obtenerEtiquetasColor(modelo);
         
-        for(int i = 0; i < 3; i++) {
+        // Crear sliders según el modelo
+        int componentes = etiquetas.length;
+        colorValues = new float[4]; // Aumentar a 4 componentes
+        
+        for(int i = 0; i < componentes; i++) {
             JSlider slider = crearSlider(0, 100, etiquetas[i]);
             slider.setValue((int)(colorValues[i] * 100));
             final int index = i;
@@ -205,6 +207,16 @@ selectorTransform.addActionListener(e -> {
         }
         panelColor.revalidate();
         panelColor.repaint();
+    }
+    
+    private String[] obtenerEtiquetasColor(String modelo) {
+        return switch (modelo) {
+            case "RGB" -> new String[]{"Rojo", "Verde", "Azul"};
+            case "CMYK" -> new String[]{"Cian", "Magenta", "Amarillo", "Negro"};
+            case "HSL" -> new String[]{"Tono", "Saturación", "Luminosidad"};
+            case "HSV" -> new String[]{"Tono", "Saturación", "Valor"};
+            default -> new String[0];
+        };
     }
 
     // Métodos OpenGL
@@ -266,13 +278,27 @@ selectorTransform.addActionListener(e -> {
     }
 
     private Color convertColor(float[] values, int colorModel) {
-        if (colorModel == 0) { // RGB
-            return new Color(values[0], values[1], values[2]);
-        } else if (colorModel == 1) { // HSL
-            return hslToRgb(values[0], values[1], values[2]);
-        } else { // HSV
-            return Color.getHSBColor(values[0], values[1], values[2]);
-        }
+        return switch (colorModel) {
+            case 0 -> new Color(values[0], values[1], values[2]); // RGB
+            case 1 -> cmykToRgb(values); // CMYK
+            case 2 -> hslToRgb(values[0], values[1], values[2]); // HSL
+            case 3 -> Color.getHSBColor(values[0], values[1], values[2]); // HSV
+            default -> Color.WHITE;
+        };
+    }
+    
+    // Nuevo método para conversión CMYK a RGB
+    private Color cmykToRgb(float[] cmyk) {
+        float c = cmyk[0];
+        float m = cmyk[1];
+        float y = cmyk[2];
+        float k = cmyk[3];
+        
+        float r = (1 - Math.min(1, c * (1 - k) + k));
+        float g = (1 - Math.min(1, m * (1 - k) + k));
+        float b = (1 - Math.min(1, y * (1 - k) + k));
+        
+        return new Color(r, g, b);
     }
     
     private Color hslToRgb(float h, float s, float l) {
