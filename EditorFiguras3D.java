@@ -6,6 +6,7 @@ import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLJPanel;
 import com.jogamp.opengl.util.FPSAnimator;
 import com.jogamp.opengl.glu.GLU;
+import com.jogamp.opengl.glu.GLUquadric;
 
 public class EditorFiguras3D extends JFrame implements GLEventListener {
     private JComboBox<String> selectorForma, selectorColor, selectorTransform;
@@ -171,6 +172,9 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
     public void init(GLAutoDrawable drawable) {
         GL2 gl = drawable.getGL().getGL2();
         gl.glEnable(GL2.GL_DEPTH_TEST);
+        //gl.glEnable(GL2.GL_LIGHTING);
+        gl.glEnable(GL2.GL_LIGHT0);
+        gl.glEnable(GL2.GL_COLOR_MATERIAL);
         gl.glClearColor(1f, 1f, 1f, 1f);
     }
 
@@ -213,34 +217,112 @@ public class EditorFiguras3D extends JFrame implements GLEventListener {
 
     private void drawCube(GL2 gl) {
         gl.glBegin(GL2.GL_QUADS);
-        // Cara frontal
-        gl.glVertex3f(-1, -1, 1); gl.glVertex3f(1, -1, 1);
-        gl.glVertex3f(1, 1, 1); gl.glVertex3f(-1, 1, 1);
-        // Cara trasera
-        gl.glVertex3f(-1, -1, -1); gl.glVertex3f(-1, 1, -1);
-        gl.glVertex3f(1, 1, -1); gl.glVertex3f(1, -1, -1);
-        // Resto de caras...
+        
+        // Cara frontal (roja)
+        gl.glColor3f(1, 0, 0);
+        gl.glVertex3f(-1, -1, 1);
+        gl.glVertex3f(1, -1, 1);
+        gl.glVertex3f(1, 1, 1);
+        gl.glVertex3f(-1, 1, 1);
+        
+        // Cara trasera (verde)
+        gl.glColor3f(0, 1, 0);
+        gl.glVertex3f(-1, -1, -1);
+        gl.glVertex3f(-1, 1, -1);
+        gl.glVertex3f(1, 1, -1);
+        gl.glVertex3f(1, -1, -1);
+        
+        // Cara superior (azul)
+        gl.glColor3f(0, 0, 1);
+        gl.glVertex3f(-1, 1, -1);
+        gl.glVertex3f(-1, 1, 1);
+        gl.glVertex3f(1, 1, 1);
+        gl.glVertex3f(1, 1, -1);
+        
+        // Cara inferior (amarilla)
+        gl.glColor3f(1, 1, 0);
+        gl.glVertex3f(-1, -1, -1);
+        gl.glVertex3f(1, -1, -1);
+        gl.glVertex3f(1, -1, 1);
+        gl.glVertex3f(-1, -1, 1);
+        
+        // Cara izquierda (cyan)
+        gl.glColor3f(0, 1, 1);
+        gl.glVertex3f(-1, -1, -1);
+        gl.glVertex3f(-1, -1, 1);
+        gl.glVertex3f(-1, 1, 1);
+        gl.glVertex3f(-1, 1, -1);
+        
+        // Cara derecha (magenta)
+        gl.glColor3f(1, 0, 1);
+        gl.glVertex3f(1, -1, -1);
+        gl.glVertex3f(1, 1, -1);
+        gl.glVertex3f(1, 1, 1);
+        gl.glVertex3f(1, -1, 1);
+        
         gl.glEnd();
     }
 
     private void drawSphere(GL2 gl) {
-        glu.gluSphere(glu.gluNewQuadric(), 1, 32, 32);
-    }
+    gl.glColor3f(1, 0.5f, 0);
+    GLUquadric sphere = glu.gluNewQuadric();
+    glu.gluQuadricDrawStyle(sphere, GLU.GLU_LINE); // Modo wireframe
+    glu.gluSphere(sphere, 1, 64, 64); // Más segmentos para mayor detalle
+}
 
     private void drawPyramid(GL2 gl) {
         gl.glBegin(GL2.GL_TRIANGLES);
-        // Base
-        gl.glVertex3f(-1, -1, -1); gl.glVertex3f(1, -1, -1); gl.glVertex3f(0, 1, 0);
-        // Caras laterales...
+        
+        // Base (cuadrada)
+        gl.glColor3f(1, 0, 0);
+        gl.glVertex3f(-1, -1, -1);
+        gl.glVertex3f(1, -1, -1);
+        gl.glVertex3f(0, -1, 1);
+        
+        // Caras laterales
+        gl.glColor3f(0, 1, 0);
+        gl.glVertex3f(-1, -1, -1);
+        gl.glVertex3f(0, 1, 0);
+        gl.glVertex3f(0, -1, 1);
+        
+        gl.glColor3f(0, 0, 1);
+        gl.glVertex3f(0, -1, 1);
+        gl.glVertex3f(0, 1, 0);
+        gl.glVertex3f(1, -1, -1);
+        
+        gl.glColor3f(1, 1, 0);
+        gl.glVertex3f(1, -1, -1);
+        gl.glVertex3f(0, 1, 0);
+        gl.glVertex3f(-1, -1, -1);
+        
         gl.glEnd();
     }
 
     private void drawCylinder(GL2 gl) {
-        glu.gluCylinder(glu.gluNewQuadric(), 1, 1, 2, 32, 1);
+        GLUquadric quadric = glu.gluNewQuadric();
+        glu.gluQuadricDrawStyle(quadric, GLU.GLU_FILL);
+        
+        // Color principal del cilindro
+        gl.glColor3f(0.2f, 0.6f, 1.0f);  // Azul claro
+        glu.gluCylinder(quadric, 1, 1, 2, 64, 1);
+        
+        // Color diferente para las tapas
+        gl.glColor3f(0.9f, 0.9f, 0.9f);  // Gris claro
+        
+        // Tapa inferior
+        glu.gluDisk(quadric, 0, 1, 64, 1);
+        
+        // Tapa superior
+        gl.glPushMatrix();
+        gl.glTranslatef(0, 0, 2);
+        glu.gluDisk(quadric, 0, 1, 64, 1);
+        gl.glPopMatrix();
     }
 
     private void drawCone(GL2 gl) {
-        glu.gluCylinder(glu.gluNewQuadric(), 1, 0, 2, 32, 1);
+        GLUquadric cone = glu.gluNewQuadric();
+        glu.gluQuadricDrawStyle(cone, GLU.GLU_FILL);
+        glu.gluCylinder(cone, 1, 0, 2, 64, 1);
     }
 
     @Override
