@@ -400,34 +400,41 @@ private void drawPyramid(GL2 gl) {
     gl.glEnd();
 }
 
-    private void drawCylinder(GL2 gl) {
-        GLUquadric quadric = glu.gluNewQuadric();
-        glu.gluQuadricDrawStyle(quadric, GLU.GLU_FILL);
-        
-        // Color principal del cilindro
-        //gl.glColor3f(0.2f, 0.6f, 1.0f);  // Azul claro
-        glu.gluCylinder(quadric, 1, 1, 2, 64, 1);
-        
-        // Color diferente para las tapas
-        //gl.glColor3f(0.9f, 0.9f, 0.9f);  // Gris claro
-        
-        // Tapa inferior
-        glu.gluDisk(quadric, 0, 1, 64, 1);
-        
-        // Tapa superior
-        gl.glPushMatrix();
-        gl.glTranslatef(0, 0, 2);
-        glu.gluDisk(quadric, 0, 1, 64, 1);
-        gl.glPopMatrix();
-        glu.gluDeleteQuadric(quadric);
-    }
+private void drawCylinder(GL2 gl) {
+    GLUquadric quadric = glu.gluNewQuadric();
+    glu.gluQuadricDrawStyle(quadric, GLU.GLU_FILL);
+    
+    // Centrar el cilindro en el origen
+    gl.glPushMatrix();
+    gl.glTranslatef(0.0f, 0.0f, -1.0f);  // Mover hacia abajo la mitad de su altura
+    
+    glu.gluCylinder(quadric, 1, 1, 2, 64, 1);
+    
+    // Tapa inferior
+    glu.gluDisk(quadric, 0, 1, 64, 1);
+    
+    // Tapa superior
+    gl.glPushMatrix();
+    gl.glTranslatef(0, 0, 2);
+    glu.gluDisk(quadric, 0, 1, 64, 1);
+    gl.glPopMatrix();
+    
+    gl.glPopMatrix();
+    glu.gluDeleteQuadric(quadric);
+}
 
-    private void drawCone(GL2 gl) {
-        GLUquadric cone = glu.gluNewQuadric();
-        glu.gluQuadricDrawStyle(cone, GLU.GLU_FILL);
-        glu.gluCylinder(cone, 1, 0, 2, 64, 1);
-        glu.gluDeleteQuadric(cone);
-    }
+private void drawCone(GL2 gl) {
+    GLUquadric cone = glu.gluNewQuadric();
+    glu.gluQuadricDrawStyle(cone, GLU.GLU_FILL);
+    
+    // Centrar el cono en el origen
+    gl.glPushMatrix();
+    gl.glTranslatef(0.0f, 0.0f, -1.0f);  // Mover hacia abajo la mitad de su altura
+    glu.gluCylinder(cone, 1, 0, 2, 64, 1);
+    
+    gl.glPopMatrix();
+    glu.gluDeleteQuadric(cone);
+}
 
     @Override
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
